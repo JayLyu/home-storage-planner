@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Noto_Sans_SC } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
 const notoSans = Noto_Sans_SC({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-noto-sans",
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
@@ -19,10 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className={`${notoSans.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-stone-50 font-sans antialiased text-stone-900">
-        {children}
-      </body>
+    <html lang="zh-CN" className={cn("h-full", notoSans.variable)}>
+      <body className="min-h-full flex flex-col antialiased">{children}</body>
     </html>
   );
 }

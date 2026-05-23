@@ -16,6 +16,7 @@
 - React 19
 - TypeScript
 - Tailwind CSS 4
+- shadcn/ui（Base UI + Radix 风格组件）
 
 ## 开发
 

@@ -1,11 +1,13 @@
 "use client";
 
+import { FormField, Input } from "@/components/form-fields";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { WizardNav } from "@/components/wizard/step-indicator";
 import { CATEGORY_GROUPS, ITEM_CATEGORIES } from "@/lib/categories";
 import { useAssessment } from "@/lib/store";
 import type { InventoryMode } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import { WizardNav } from "@/components/wizard/step-indicator";
-import { Field, Input } from "@/components/ui/form";
 
 const MODES: { id: InventoryMode; title: string; desc: string }[] = [
   { id: "quick", title: "快速估算", desc: "基于家庭画像自动生成物品基线，约 5 分钟完成" },
@@ -18,56 +20,63 @@ export function InventoryStep() {
 
   return (
     <div>
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <ToggleGroup
+        variant="outline"
+        spacing={2}
+        value={[inventoryMode]}
+        onValueChange={(values) => {
+          const value = values[0];
+          if (value) setInventoryMode(value as InventoryMode);
+        }}
+        className="mb-6 grid w-full gap-3 sm:grid-cols-3"
+      >
         {MODES.map((mode) => (
-          <button
+          <ToggleGroupItem
             key={mode.id}
-            type="button"
-            onClick={() => setInventoryMode(mode.id)}
-            className={cn(
-              "rounded-2xl border p-4 text-left transition",
-              inventoryMode === mode.id
-                ? "border-stone-800 bg-stone-50 ring-2 ring-stone-800"
-                : "border-stone-200 hover:border-stone-400"
-            )}
+            value={mode.id}
+            className="h-auto flex-col items-start rounded-xl p-4 text-left data-pressed:border-primary data-pressed:bg-accent"
           >
-            <div className="font-medium text-stone-900">{mode.title}</div>
-            <div className="mt-1 text-xs text-stone-500">{mode.desc}</div>
-          </button>
+            <span className="font-medium">{mode.title}</span>
+            <span className="mt-1 text-xs font-normal text-muted-foreground">{mode.desc}</span>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
 
       {inventoryMode === "quick" ? (
-        <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-6 text-sm text-stone-600">
-          系统将基于你的家庭人数、户型、生活方式和旧房现状，自动生成默认物品基线并进行模块换算。
-          如需更精确结果，可切换到「分类盘点」模式。
-        </div>
+        <Card className="border-dashed">
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            系统将基于你的家庭人数、户型、生活方式和旧房现状，自动生成默认物品基线并进行模块换算。
+            如需更精确结果，可切换到「分类盘点」模式。
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-6">
           {CATEGORY_GROUPS.map((group) => {
             const categories = ITEM_CATEGORIES.filter((c) => c.parentId === group.id);
             return (
-              <div key={group.id}>
-                <h4 className="mb-3 font-medium text-stone-800">{group.name}</h4>
-                <div className="grid gap-3 sm:grid-cols-2">
+              <Card key={group.id}>
+                <CardHeader>
+                  <CardTitle>{group.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-2">
                   {categories.map((cat) => {
                     const item = inventory.find((i) => i.categoryId === cat.id);
                     return (
-                      <Field key={cat.id}>
-                        <label className="mb-1.5 block text-sm text-stone-600">
+                      <FormField key={cat.id} className="mb-0">
+                        <Label>
                           {cat.name} ({cat.unit})
-                        </label>
+                        </Label>
                         <Input
                           type="number"
                           min={0}
                           value={item?.quantity ?? 0}
                           onChange={(e) => setInventoryItem(cat.id, Number(e.target.value))}
                         />
-                      </Field>
+                      </FormField>
                     );
                   })}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>

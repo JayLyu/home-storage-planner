@@ -1,22 +1,29 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useAssessment } from "@/lib/store";
 import type { RiskLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function riskColor(level: RiskLevel) {
-  if (level === "高") return "text-red-600 bg-red-50 border-red-200";
-  if (level === "中") return "text-amber-700 bg-amber-50 border-amber-200";
-  return "text-emerald-700 bg-emerald-50 border-emerald-200";
+function riskBadgeVariant(level: RiskLevel): "destructive" | "secondary" | "outline" {
+  if (level === "高") return "destructive";
+  if (level === "中") return "secondary";
+  return "outline";
 }
 
 function scoreColor(score: number) {
   if (score >= 90) return "text-emerald-600";
   if (score >= 75) return "text-lime-600";
   if (score >= 60) return "text-amber-600";
-  return "text-red-600";
+  return "text-destructive";
 }
 
 export function ResultStep() {
@@ -56,113 +63,134 @@ export function ResultStep() {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardDescription>收纳评分</CardDescription>
-          <div className={cn("mt-2 text-4xl font-bold", scoreColor(data.score))}>
-            {data.score}
-            <span className="text-lg font-normal text-stone-400"> / 100</span>
-          </div>
+          <CardHeader>
+            <CardDescription>收纳评分</CardDescription>
+            <CardTitle className={cn("text-4xl", scoreColor(data.score))}>
+              {data.score}
+              <span className="text-lg font-normal text-muted-foreground"> / 100</span>
+            </CardTitle>
+          </CardHeader>
         </Card>
         <Card>
-          <CardDescription>风险等级</CardDescription>
-          <div className={cn("mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-medium", riskColor(data.riskLevel))}>
-            {data.riskLevel}
-          </div>
+          <CardHeader>
+            <CardDescription>风险等级</CardDescription>
+            <Badge variant={riskBadgeVariant(data.riskLevel)} className="mt-2">
+              {data.riskLevel}
+            </Badge>
+          </CardHeader>
         </Card>
         <Card>
-          <CardDescription>物品净需求</CardDescription>
-          <div className="mt-2 text-3xl font-bold text-stone-900">{data.netVolume} m³</div>
+          <CardHeader>
+            <CardDescription>物品净需求</CardDescription>
+            <CardTitle className="text-3xl">{data.netVolume} m³</CardTitle>
+          </CardHeader>
         </Card>
         <Card>
-          <CardDescription>推荐柜体毛体积</CardDescription>
-          <div className="mt-2 text-3xl font-bold text-stone-900">{data.grossVolume} m³</div>
-          <p className="mt-1 text-xs text-stone-500">冗余率 {data.redundancyRate}%</p>
+          <CardHeader>
+            <CardDescription>推荐柜体毛体积</CardDescription>
+            <CardTitle className="text-3xl">{data.grossVolume} m³</CardTitle>
+            <CardDescription>冗余率 {data.redundancyRate}%</CardDescription>
+          </CardHeader>
         </Card>
       </div>
 
       {data.comparisonNotes.length > 0 && (
         <Card>
-          <CardTitle>旧房 → 新房对照</CardTitle>
-          <ul className="mt-4 space-y-2">
-            {data.comparisonNotes.map((note) => (
-              <li key={note} className="flex gap-2 text-sm text-stone-600">
-                <span className="text-stone-400">•</span>
-                {note}
-              </li>
-            ))}
-          </ul>
+          <CardHeader>
+            <CardTitle>旧房 → 新房对照</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              {data.comparisonNotes.map((note) => (
+                <li key={note} className="flex gap-2">
+                  <span>•</span>
+                  {note}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
         </Card>
       )}
 
       <Card>
-        <CardTitle>分空间需求</CardTitle>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <CardHeader>
+          <CardTitle>分空间需求</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {data.roomDemands
             .filter((r) => r.volume > 0)
             .map((room) => (
-              <div key={room.room} className="rounded-xl bg-stone-50 p-4">
-                <div className="font-medium text-stone-800">{room.room}</div>
-                <div className="mt-1 text-2xl font-semibold text-stone-900">{room.volume.toFixed(1)} m³</div>
-                <div className="mt-2 text-xs text-stone-500">
+              <Card key={room.room} size="sm" className="bg-muted/40">
+                <CardHeader>
+                  <CardTitle>{room.room}</CardTitle>
+                  <CardDescription className="text-2xl font-semibold text-foreground">
+                    {room.volume.toFixed(1)} m³
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-xs text-muted-foreground">
                   {room.modules.map((m) => `${m.moduleName} ×${m.count}`).join("、")}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
-        </div>
+        </CardContent>
       </Card>
 
       <Card>
-        <CardTitle>柜体建议</CardTitle>
-        <div className="mt-4 space-y-3">
+        <CardHeader>
+          <CardTitle>柜体建议</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
           {data.recommendations.map((rec) => (
-            <div key={rec.description} className="flex items-start gap-3 rounded-xl border border-stone-100 p-4">
-              <span
-                className={cn(
-                  "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                  rec.priority === "高" ? "bg-stone-900 text-white" : "bg-stone-200 text-stone-700"
-                )}
-              >
-                {rec.priority}
-              </span>
-              <div>
-                <div className="text-sm font-medium text-stone-800">
-                  {rec.targetZone} · {rec.cabinetType}
+            <Card key={rec.description} size="sm">
+              <CardContent className="flex items-start gap-3 pt-4">
+                <Badge variant={rec.priority === "高" ? "default" : "secondary"}>
+                  {rec.priority}
+                </Badge>
+                <div>
+                  <div className="text-sm font-medium">
+                    {rec.targetZone} · {rec.cabinetType}
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">{rec.description}</div>
                 </div>
-                <div className="mt-1 text-sm text-stone-600">{rec.description}</div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
-        </div>
+        </CardContent>
       </Card>
 
       <Card>
-        <CardTitle>风险报告</CardTitle>
-        <div className="mt-4 space-y-3">
+        <CardHeader>
+          <CardTitle>风险报告</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
           {data.risks.length === 0 ? (
-            <p className="text-sm text-stone-500">未发现明显风险，当前规划基本合理。</p>
+            <p className="text-sm text-muted-foreground">未发现明显风险，当前规划基本合理。</p>
           ) : (
             data.risks.map((risk) => (
-              <div key={risk.riskType + risk.evidence} className="rounded-xl border border-stone-100 p-4">
-                <div className="flex items-center gap-2">
-                  <span className={cn("rounded-full border px-2 py-0.5 text-xs font-medium", riskColor(risk.level))}>
-                    {risk.level}
-                  </span>
-                  <span className="font-medium text-stone-800">{risk.riskType}</span>
-                </div>
-                <p className="mt-2 text-sm text-stone-500">{risk.evidence}</p>
-                <p className="mt-1 text-sm text-stone-700">{risk.suggestion}</p>
-              </div>
+              <Card key={risk.riskType + risk.evidence} size="sm">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={riskBadgeVariant(risk.level)}>{risk.level}</Badge>
+                    <span className="font-medium">{risk.riskType}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">{risk.evidence}</p>
+                  <p className="mt-1 text-sm">{risk.suggestion}</p>
+                </CardContent>
+              </Card>
             ))
           )}
-        </div>
+        </CardContent>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardTitle>空间优先级</CardTitle>
-          <div className="mt-4 space-y-4 text-sm">
+          <CardHeader>
+            <CardTitle>空间优先级</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
             <div>
               <div className="font-medium text-emerald-700">优先保留</div>
-              <ul className="mt-1 list-inside list-disc text-stone-600">
+              <ul className="mt-1 list-inside list-disc text-muted-foreground">
                 {data.spacePriority.keep.map((s) => (
                   <li key={s}>{s}</li>
                 ))}
@@ -170,37 +198,41 @@ export function ResultStep() {
             </div>
             <div>
               <div className="font-medium text-amber-700">可牺牲</div>
-              <ul className="mt-1 list-inside list-disc text-stone-600">
+              <ul className="mt-1 list-inside list-disc text-muted-foreground">
                 {data.spacePriority.sacrifice.map((s) => (
                   <li key={s}>{s}</li>
                 ))}
               </ul>
             </div>
             <div>
-              <div className="font-medium text-red-700">不建议压缩</div>
-              <ul className="mt-1 list-inside list-disc text-stone-600">
+              <div className="font-medium text-destructive">不建议压缩</div>
+              <ul className="mt-1 list-inside list-disc text-muted-foreground">
                 {data.spacePriority.doNotCompress.map((s) => (
                   <li key={s}>{s}</li>
                 ))}
               </ul>
             </div>
-          </div>
+          </CardContent>
         </Card>
 
         <Card>
-          <CardTitle>设计师沟通清单</CardTitle>
-          <ul className="mt-4 space-y-2">
-            {data.designerChecklist.map((item) => (
-              <li key={item} className="flex gap-2 text-sm text-stone-600">
-                <span className="text-stone-400">✓</span>
-                {item}
-              </li>
-            ))}
-          </ul>
+          <CardHeader>
+            <CardTitle>设计师沟通清单</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {data.designerChecklist.map((item) => (
+                <li key={item} className="flex gap-2 text-sm text-muted-foreground">
+                  <span>✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
         </Card>
       </div>
 
-      <div className="flex flex-wrap gap-3 border-t border-stone-200 pt-6">
+      <div className="flex flex-wrap gap-3 border-t pt-6">
         <Button variant="secondary" onClick={() => setStep("inventory")}>
           调整输入
         </Button>
