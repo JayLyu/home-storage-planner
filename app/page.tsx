@@ -1,15 +1,40 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { IconLabel } from "@/components/ui/icon-text";
+import { ArrowRight, ArrowRightLeft, Clock, Package, ShieldAlert } from "lucide-react";
+
+const FEATURES = [
+  {
+    title: "15 分钟",
+    desc: "快速估算模式，基于画像生成基线",
+    icon: Clock,
+  },
+  {
+    title: "规则换算",
+    desc: "物品 → 收纳模块 → 柜体建议",
+    icon: ArrowRightLeft,
+  },
+  {
+    title: "风险报告",
+    desc: "容量、增长、大件与爆仓分析",
+    icon: ShieldAlert,
+  },
+] as const;
 
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <div className="font-semibold">Home Storage Planner</div>
+          <IconLabel icon={Package} className="font-semibold text-foreground">
+            Home Storage Planner
+          </IconLabel>
           <Link href="/assess">
-            <Button variant="ghost">开始评估</Button>
+            <Button variant="ghost">
+              开始评估
+              <ArrowRight className="size-4" aria-hidden />
+            </Button>
           </Link>
         </div>
       </header>
@@ -31,24 +56,26 @@ export default function Home() {
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link href="/assess">
-              <Button className="min-w-[160px]">开始评估</Button>
+              <Button className="min-w-[160px]">
+                开始评估
+                <ArrowRight className="size-4" aria-hidden />
+              </Button>
             </Link>
             <Link href="/assess">
               <Button variant="secondary" className="min-w-[160px]">
+                <Clock className="size-4" aria-hidden />
                 快速估算
               </Button>
             </Link>
           </div>
 
           <div className="mt-16 grid gap-4 text-left sm:grid-cols-3">
-            {[
-              { title: "15 分钟", desc: "快速估算模式，基于画像生成基线" },
-              { title: "规则换算", desc: "物品 → 收纳模块 → 柜体建议" },
-              { title: "风险报告", desc: "容量、增长、大件与爆仓分析" },
-            ].map((item) => (
+            {FEATURES.map((item) => (
               <Card key={item.title}>
                 <CardHeader>
-                  <CardTitle>{item.title}</CardTitle>
+                  <CardTitle>
+                    <IconLabel icon={item.icon}>{item.title}</IconLabel>
+                  </CardTitle>
                   <CardDescription>{item.desc}</CardDescription>
                 </CardHeader>
               </Card>

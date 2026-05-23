@@ -1,18 +1,25 @@
 "use client";
 
 import { FormField, Input } from "@/components/form-fields";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { IconLabel } from "@/components/ui/icon-text";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { WizardNav } from "@/components/wizard/step-indicator";
 import { CATEGORY_GROUPS, ITEM_CATEGORIES } from "@/lib/categories";
 import { useAssessment } from "@/lib/store";
 import type { InventoryMode } from "@/lib/types";
+import { ClipboardList, ListChecks, Zap, type LucideIcon } from "lucide-react";
 
-const MODES: { id: InventoryMode; title: string; desc: string }[] = [
-  { id: "quick", title: "快速估算", desc: "基于家庭画像自动生成物品基线，约 5 分钟完成" },
-  { id: "category", title: "分类盘点", desc: "按品类填写数量，适合有大致概念的用户" },
-  { id: "detailed", title: "精细盘点", desc: "与分类盘点相同，后续版本将支持尺寸与频率" },
+const MODES: {
+  id: InventoryMode;
+  title: string;
+  desc: string;
+  icon: LucideIcon;
+}[] = [
+  { id: "quick", title: "快速估算", desc: "基于家庭画像自动生成物品基线，约 5 分钟完成", icon: Zap },
+  { id: "category", title: "分类盘点", desc: "按品类填写数量，适合有大致概念的用户", icon: ListChecks },
+  { id: "detailed", title: "精细盘点", desc: "与分类盘点相同，后续版本将支持尺寸与频率", icon: ClipboardList },
 ];
 
 export function InventoryStep() {
@@ -30,23 +37,31 @@ export function InventoryStep() {
         }}
         className="mb-6 grid w-full gap-3 sm:grid-cols-3"
       >
-        {MODES.map((mode) => (
-          <ToggleGroupItem
-            key={mode.id}
-            value={mode.id}
-            className="h-auto flex-col items-start rounded-xl p-4 text-left data-pressed:border-primary data-pressed:bg-accent"
-          >
-            <span className="font-medium">{mode.title}</span>
-            <span className="mt-1 text-xs font-normal text-muted-foreground">{mode.desc}</span>
-          </ToggleGroupItem>
-        ))}
+        {MODES.map((mode) => {
+          const Icon = mode.icon;
+          return (
+            <ToggleGroupItem
+              key={mode.id}
+              value={mode.id}
+              className="h-auto flex-col items-start rounded-xl p-4 text-left data-pressed:border-primary data-pressed:bg-accent"
+            >
+              <IconLabel icon={Icon} className="font-medium">
+                {mode.title}
+              </IconLabel>
+              <span className="mt-1 text-xs font-normal text-muted-foreground">{mode.desc}</span>
+            </ToggleGroupItem>
+          );
+        })}
       </ToggleGroup>
 
       {inventoryMode === "quick" ? (
         <Card className="border-dashed">
-          <CardContent className="pt-6 text-sm text-muted-foreground">
-            系统将基于你的家庭人数、户型、生活方式和旧房现状，自动生成默认物品基线并进行模块换算。
-            如需更精确结果，可切换到「分类盘点」模式。
+          <CardContent className="flex gap-3 pt-6 text-sm text-muted-foreground">
+            <Zap className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+            <p>
+              系统将基于你的家庭人数、户型、生活方式和旧房现状，自动生成默认物品基线并进行模块换算。
+              如需更精确结果，可切换到「分类盘点」模式。
+            </p>
           </CardContent>
         </Card>
       ) : (

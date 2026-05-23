@@ -9,9 +9,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { IconLabel } from "@/components/ui/icon-text";
 import { useAssessment } from "@/lib/store";
 import type { RiskLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  Box,
+  ClipboardCheck,
+  Download,
+  Gauge,
+  LayoutGrid,
+  ListChecks,
+  Package,
+  PenLine,
+  RefreshCw,
+  ShieldAlert,
+} from "lucide-react";
 
 function riskBadgeVariant(level: RiskLevel): "destructive" | "secondary" | "outline" {
   if (level === "高") return "destructive";
@@ -64,7 +79,9 @@ export function ResultStep() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
-            <CardDescription>收纳评分</CardDescription>
+            <CardDescription>
+              <IconLabel icon={Gauge}>收纳评分</IconLabel>
+            </CardDescription>
             <CardTitle className={cn("text-4xl", scoreColor(data.score))}>
               {data.score}
               <span className="text-lg font-normal text-muted-foreground"> / 100</span>
@@ -73,7 +90,9 @@ export function ResultStep() {
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>风险等级</CardDescription>
+            <CardDescription>
+              <IconLabel icon={ShieldAlert}>风险等级</IconLabel>
+            </CardDescription>
             <Badge variant={riskBadgeVariant(data.riskLevel)} className="mt-2">
               {data.riskLevel}
             </Badge>
@@ -81,13 +100,17 @@ export function ResultStep() {
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>物品净需求</CardDescription>
+            <CardDescription>
+              <IconLabel icon={Box}>物品净需求</IconLabel>
+            </CardDescription>
             <CardTitle className="text-3xl">{data.netVolume} m³</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>推荐柜体毛体积</CardDescription>
+            <CardDescription>
+              <IconLabel icon={Package}>推荐柜体毛体积</IconLabel>
+            </CardDescription>
             <CardTitle className="text-3xl">{data.grossVolume} m³</CardTitle>
             <CardDescription>冗余率 {data.redundancyRate}%</CardDescription>
           </CardHeader>
@@ -97,7 +120,9 @@ export function ResultStep() {
       {data.comparisonNotes.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>旧房 → 新房对照</CardTitle>
+            <CardTitle>
+              <IconLabel icon={ArrowLeftRight}>旧房 → 新房对照</IconLabel>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -114,7 +139,9 @@ export function ResultStep() {
 
       <Card>
         <CardHeader>
-          <CardTitle>分空间需求</CardTitle>
+          <CardTitle>
+            <IconLabel icon={LayoutGrid}>分空间需求</IconLabel>
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {data.roomDemands
@@ -137,7 +164,9 @@ export function ResultStep() {
 
       <Card>
         <CardHeader>
-          <CardTitle>柜体建议</CardTitle>
+          <CardTitle>
+            <IconLabel icon={Box}>柜体建议</IconLabel>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {data.recommendations.map((rec) => (
@@ -160,7 +189,9 @@ export function ResultStep() {
 
       <Card>
         <CardHeader>
-          <CardTitle>风险报告</CardTitle>
+          <CardTitle>
+            <IconLabel icon={AlertTriangle}>风险报告</IconLabel>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {data.risks.length === 0 ? (
@@ -185,7 +216,9 @@ export function ResultStep() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>空间优先级</CardTitle>
+            <CardTitle>
+              <IconLabel icon={ListChecks}>空间优先级</IconLabel>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
@@ -217,13 +250,15 @@ export function ResultStep() {
 
         <Card>
           <CardHeader>
-            <CardTitle>设计师沟通清单</CardTitle>
+            <CardTitle>
+              <IconLabel icon={ClipboardCheck}>设计师沟通清单</IconLabel>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
               {data.designerChecklist.map((item) => (
                 <li key={item} className="flex gap-2 text-sm text-muted-foreground">
-                  <span>✓</span>
+                  <ClipboardCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
                   {item}
                 </li>
               ))}
@@ -234,12 +269,15 @@ export function ResultStep() {
 
       <div className="flex flex-wrap gap-3 border-t pt-6">
         <Button variant="secondary" onClick={() => setStep("inventory")}>
+          <PenLine className="size-4" aria-hidden />
           调整输入
         </Button>
         <Button variant="secondary" onClick={handleExport}>
+          <Download className="size-4" aria-hidden />
           导出报告
         </Button>
         <Button variant="ghost" onClick={reset}>
+          <RefreshCw className="size-4" aria-hidden />
           重新开始
         </Button>
       </div>
