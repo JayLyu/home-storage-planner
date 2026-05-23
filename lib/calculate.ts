@@ -427,6 +427,37 @@ export function calculateAssessment(input: AssessmentInput): AssessmentResult {
   };
 }
 
+function splitByOwner(total: number): { male: number; female: number } {
+  if (total <= 0) return { male: 0, female: 0 };
+  const female = Math.floor(total / 2);
+  return { male: total - female, female };
+}
+
+function expandOwnerScopedBase(base: Record<string, number>): Record<string, number> {
+  const ownerKeys = [
+    "short-hang",
+    "long-hang",
+    "fold-clothing",
+    "small-clothing",
+    "seasonal-clothing",
+    "daily-shoes",
+    "seasonal-shoes",
+    "bags",
+  ] as const;
+  const expanded = { ...base };
+
+  for (const key of ownerKeys) {
+    const total = expanded[key];
+    if (total == null) continue;
+    delete expanded[key];
+    const { male, female } = splitByOwner(total);
+    if (male > 0) expanded[`${key}-male`] = male;
+    if (female > 0) expanded[`${key}-female`] = female;
+  }
+
+  return expanded;
+}
+
 export function generateQuickInventory(input: AssessmentInput): InventoryItem[] {
   const size = input.household.householdSize;
   const layoutMultiplier =
@@ -434,7 +465,7 @@ export function generateQuickInventory(input: AssessmentInput): InventoryItem[] 
     input.newHome.newHomeLayout === "两居" ? 1 :
     input.newHome.newHomeLayout === "三居" ? 1.2 : 1.4;
 
-  const base: Record<string, number> = {
+  const base = expandOwnerScopedBase({
     "short-hang": Math.round(30 * size * layoutMultiplier),
     "long-hang": Math.round(8 * size),
     "fold-clothing": Math.round(40 * size),
@@ -459,7 +490,7 @@ export function generateQuickInventory(input: AssessmentInput): InventoryItem[] 
     "sports-camping": Math.round(input.lifestyle.hobbyStorageLevel * 2),
     "children-items": input.household.hasChildren ? 30 : input.household.plansForChildren ? 15 : 0,
     "pet-items": input.household.hasPets ? 20 : 0,
-  };
+  });
 
   return Object.entries(base)
     .filter(([, qty]) => qty > 0)

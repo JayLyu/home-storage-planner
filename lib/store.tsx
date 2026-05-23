@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { calculateAssessment, generateQuickInventory } from "./calculate";
+import { getCategoryById, migrateLegacyInventory } from "./categories";
 import type {
   AssessmentInput,
   AssessmentResult,
@@ -128,7 +129,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
       setNewHomeState(saved.newHome ?? defaultNewHome);
       setLifestyleState(saved.lifestyle ?? defaultLifestyle);
       setInventoryMode(saved.inventoryMode ?? "quick");
-      setInventory(saved.inventory ?? []);
+      setInventory(migrateLegacyInventory(saved.inventory ?? []));
     }
     skipSaveRef.current = false;
     setReady(true);
@@ -159,12 +160,13 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setInventoryItem = useCallback((categoryId: string, quantity: number) => {
+    const unit = getCategoryById(categoryId)?.unit ?? "件";
     setInventory((prev) => {
       const existing = prev.find((i) => i.categoryId === categoryId);
       if (existing) {
         return prev.map((i) => (i.categoryId === categoryId ? { ...i, quantity } : i));
       }
-      return [...prev, { categoryId, quantity, unit: "件" }];
+      return [...prev, { categoryId, quantity, unit }];
     });
   }, []);
 
