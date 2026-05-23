@@ -5,6 +5,8 @@ export type TimeHorizon = "1年" | "3年" | "5年";
 export type StoragePriority = "外观优先" | "均衡" | "收纳优先";
 export type CabinetDepth = "浅柜为主" | "标准柜" | "深柜可接受";
 export type InventoryMode = "quick" | "category" | "detailed";
+export type SizePreset = "小" | "中" | "大" | "超大" | "自定义";
+export type UsageFrequency = "高频" | "中频" | "低频" | "超低频";
 export type RiskLevel = "低" | "中" | "高";
 export type RoomZone =
   | "玄关"
@@ -56,10 +58,22 @@ export interface LifestyleProfile {
   seasonalClothingLevel: number;
 }
 
+export interface CustomDimensions {
+  width: number;
+  depth: number;
+  height: number;
+}
+
 export interface InventoryItem {
   categoryId: string;
   quantity: number;
   unit: string;
+  /** 精细盘点：尺寸档位 */
+  sizePreset?: SizePreset;
+  /** 精细盘点：自定义尺寸 (cm) */
+  customDimensions?: CustomDimensions;
+  /** 精细盘点：使用频率 */
+  usageFrequency?: UsageFrequency;
 }
 
 export interface AssessmentInput {

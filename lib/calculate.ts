@@ -1,4 +1,7 @@
 import { ITEM_CATEGORIES } from "./categories";
+import {
+  effectiveInventoryQuantity,
+} from "./inventory-meta";
 import { moduleEffectiveVolume, moduleGrossVolume, STORAGE_MODULES } from "./modules";
 import type {
   AssessmentInput,
@@ -39,7 +42,7 @@ const DEFAULT_ROOM_WEIGHTS: Record<RoomZone, number> = {
 const CABINET_VOLUME_PER_MODULE = 1.15;
 const CABINET_WIDTH_M = 0.8;
 
-function modulesForInventory(inventory: InventoryItem[]): ModuleResult[] {
+function modulesForInventory(inventory: InventoryItem[], mode: AssessmentInput["inventoryMode"]): ModuleResult[] {
   const moduleCounts = new Map<string, { count: number; room: RoomZone }>();
 
   for (const item of inventory) {
@@ -47,7 +50,8 @@ function modulesForInventory(inventory: InventoryItem[]): ModuleResult[] {
     const category = ITEM_CATEGORIES.find((c) => c.id === item.categoryId);
     if (!category) continue;
 
-    const count = Math.ceil(item.quantity / category.itemsPerModule);
+    const effectiveQty = effectiveInventoryQuantity(item, category, mode);
+    const count = Math.ceil(effectiveQty / category.itemsPerModule);
     const existing = moduleCounts.get(category.moduleId);
     if (existing) {
       existing.count += count;
@@ -176,6 +180,52 @@ function buildRoomComparison(
 
 function assessRisks(input: AssessmentInput, modules: ModuleResult[], grossVolume: number): RiskFactor[] {
   const risks: RiskFactor[] = [];
+
+  if (input.inventoryMode === "detailed") {
+    const highFreqItems = input.inventory.filter(
+      (item) => item.quantity > 0 && item.usageFrequency === "高频"
+    );
+    const lowAccessRooms: RoomZone[] = ["储物间", "阳台"];
+    const highFreqInLowAccess = highFreqItems.filter((item) => {
+      const category = ITEM_CATEGORIES.find((c) => c.id === item.categoryId);
+      return category && lowAccessRooms.includes(category.defaultRoom as RoomZone);
+    });
+
+    if (highFreqItems.length >= 4) {
+      risks.push({
+        riskType: "高频拿取风险",
+        level: highFreqItems.length >= 6 ? "中" : "低",
+        evidence: `精细盘点中有 ${highFreqItems.length} 类高频物品，需优先规划便利收纳位`,
+        suggestion: "高频物品建议放在腰部至视线高度，避免深柜深处或需要搬动才能取用的位置",
+      });
+    }
+
+    if (highFreqInLowAccess.length > 0) {
+      const names = highFreqInLowAccess
+        .map((item) => ITEM_CATEGORIES.find((c) => c.id === item.categoryId)?.name)
+        .filter(Boolean)
+        .slice(0, 3)
+        .join("、");
+      risks.push({
+        riskType: "高频拿取风险",
+        level: "中",
+        evidence: `${names} 等高频物品默认归属 ${highFreqInLowAccess.map((i) => ITEM_CATEGORIES.find((c) => c.id === i.categoryId)?.defaultRoom).filter(Boolean).join("、")}，拿取可能不便`,
+        suggestion: "考虑在更近便的位置增加补充收纳，或将同类高频物品集中至主活动区",
+      });
+    }
+
+    const oversized = input.inventory.filter(
+      (item) => item.quantity > 0 && (item.sizePreset === "超大" || item.sizePreset === "自定义")
+    );
+    if (oversized.length >= 3) {
+      risks.push({
+        riskType: "大件连续空间风险",
+        level: "低",
+        evidence: "精细盘点中有多类大尺寸物品，需预留足够连续空间",
+        suggestion: "大件或自定义尺寸物品优先规划深柜、高柜或独立储物间，避免挤在浅柜",
+      });
+    }
+  }
 
   const plannedLength = input.newHome.plannedCabinetZones.length * 1.2;
   const estimatedLength = modules.reduce((sum, m) => {
@@ -382,7 +432,7 @@ function buildDesignerChecklist(
 }
 
 export function calculateAssessment(input: AssessmentInput): AssessmentResult {
-  const modules = modulesForInventory(input.inventory);
+  const modules = modulesForInventory(input.inventory, input.inventoryMode);
   const netVolume = modules.reduce(
     (sum, m) => sum + moduleEffectiveVolume(m.moduleId) * m.count,
     0

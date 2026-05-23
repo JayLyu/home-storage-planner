@@ -12,10 +12,12 @@ import {
 } from "react";
 import { calculateAssessment, generateQuickInventory } from "./calculate";
 import { getCategoryById, migrateLegacyInventory } from "./categories";
+import { defaultDetailedItemFields, normalizeCustomDimensions } from "./inventory-meta";
 import type {
   AssessmentInput,
   AssessmentResult,
   HouseholdInfo,
+  InventoryItem,
   InventoryMode,
   LifestyleProfile,
   NewHomeInfo,
@@ -80,8 +82,12 @@ interface AssessmentContextValue {
   setLifestyle: (data: Partial<LifestyleProfile>) => void;
   inventoryMode: InventoryMode;
   setInventoryMode: (mode: InventoryMode) => void;
-  inventory: { categoryId: string; quantity: number; unit: string }[];
+  inventory: InventoryItem[];
   setInventoryItem: (categoryId: string, quantity: number) => void;
+  updateInventoryItem: (
+    categoryId: string,
+    update: Partial<Omit<InventoryItem, "categoryId" | "unit">>
+  ) => void;
   result: AssessmentResult | null;
   computeResult: () => AssessmentResult;
   reset: () => void;
@@ -96,7 +102,7 @@ type SavedState = {
   newHome?: NewHomeInfo;
   lifestyle?: LifestyleProfile;
   inventoryMode?: InventoryMode;
-  inventory?: { categoryId: string; quantity: number; unit: string }[];
+  inventory?: InventoryItem[];
 };
 
 function loadState(): SavedState | null {
@@ -116,7 +122,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
   const [newHome, setNewHomeState] = useState<NewHomeInfo>(defaultNewHome);
   const [lifestyle, setLifestyleState] = useState<LifestyleProfile>(defaultLifestyle);
   const [inventoryMode, setInventoryMode] = useState<InventoryMode>("quick");
-  const [inventory, setInventory] = useState<{ categoryId: string; quantity: number; unit: string }[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [ready, setReady] = useState(false);
   const skipSaveRef = useRef(true);
 
@@ -159,16 +165,44 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
     setLifestyleState((prev) => ({ ...prev, ...data }));
   }, []);
 
-  const setInventoryItem = useCallback((categoryId: string, quantity: number) => {
-    const unit = getCategoryById(categoryId)?.unit ?? "件";
-    setInventory((prev) => {
-      const existing = prev.find((i) => i.categoryId === categoryId);
-      if (existing) {
-        return prev.map((i) => (i.categoryId === categoryId ? { ...i, quantity } : i));
-      }
-      return [...prev, { categoryId, quantity, unit }];
-    });
-  }, []);
+  const updateInventoryItem = useCallback(
+    (categoryId: string, update: Partial<Omit<InventoryItem, "categoryId" | "unit">>) => {
+      const unit = getCategoryById(categoryId)?.unit ?? "件";
+      const normalizedUpdate = {
+        ...update,
+        ...(update.customDimensions !== undefined
+          ? { customDimensions: normalizeCustomDimensions(update.customDimensions) }
+          : {}),
+      };
+
+      setInventory((prev) => {
+        const existing = prev.find((i) => i.categoryId === categoryId);
+        if (existing) {
+          return prev.map((i) =>
+            i.categoryId === categoryId ? { ...i, ...normalizedUpdate } : i
+          );
+        }
+        return [
+          ...prev,
+          {
+            categoryId,
+            quantity: normalizedUpdate.quantity ?? 0,
+            unit,
+            ...defaultDetailedItemFields(),
+            ...normalizedUpdate,
+          },
+        ];
+      });
+    },
+    []
+  );
+
+  const setInventoryItem = useCallback(
+    (categoryId: string, quantity: number) => {
+      updateInventoryItem(categoryId, { quantity });
+    },
+    [updateInventoryItem]
+  );
 
   const buildInput = useCallback((): AssessmentInput => {
     let items = inventory;
@@ -221,6 +255,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
         setInventoryMode,
         inventory,
         setInventoryItem,
+        updateInventoryItem,
         result,
         computeResult,
         reset,
