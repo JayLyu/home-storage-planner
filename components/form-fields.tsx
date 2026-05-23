@@ -18,11 +18,20 @@ import { useId } from "react";
 export function FormField({
   children,
   className,
+  description,
 }: {
   children: React.ReactNode;
   className?: string;
+  description?: string;
 }) {
-  return <div className={cn("mb-4 space-y-2", className)}>{children}</div>;
+  return (
+    <div className={cn("mb-4 space-y-2", className)}>
+      {children}
+      {description ? (
+        <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
+      ) : null}
+    </div>
+  );
 }
 
 export function SelectField<T extends string>({
@@ -40,7 +49,7 @@ export function SelectField<T extends string>({
 }) {
   return (
     <FormField className={className}>
-      <Label>{label}</Label>
+      <Label className="text-sm font-medium">{label}</Label>
       <Select value={value} onValueChange={(v) => v && onChange(v as T)}>
         <SelectTrigger className="w-full">
           <SelectValue />
@@ -61,18 +70,47 @@ export function SwitchField({
   label,
   checked,
   onChange,
+  description,
 }: {
   label: string;
   checked: boolean;
   onChange: (value: boolean) => void;
+  description?: string;
 }) {
   const id = useId();
 
   return (
-    <div className="mb-3 flex items-center justify-between rounded-lg border px-4 py-3">
-      <Label htmlFor={id}>{label}</Label>
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+    <div className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
+      <div className="min-w-0 space-y-0.5">
+        <Label htmlFor={id} className="text-sm font-medium leading-snug">
+          {label}
+        </Label>
+        {description ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} className="mt-0.5 shrink-0" />
     </div>
+  );
+}
+
+export function SwitchFieldGroup({
+  legend,
+  description,
+  children,
+}: {
+  legend: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="mb-4 space-y-2">
+      <legend className="text-sm font-medium">{legend}</legend>
+      {description ? (
+        <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
+      ) : null}
+      <div className="space-y-2">{children}</div>
+    </fieldset>
   );
 }
 

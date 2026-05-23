@@ -24,9 +24,10 @@ function StepBadge({
 
   return (
     <div
+      title={`${index + 1}. ${title}${isDone ? "（已完成）" : isActive ? "（当前）" : ""}`}
       className={cn(
         "flex size-8 shrink-0 items-center justify-center rounded-full",
-        isActive && "bg-primary text-primary-foreground",
+        isActive && "bg-primary text-primary-foreground ring-2 ring-primary/20 ring-offset-2",
         isDone && "bg-muted text-muted-foreground",
         !isActive && !isDone && "bg-muted/50 text-muted-foreground"
       )}
@@ -44,9 +45,24 @@ export function StepIndicator({ currentStep }: { currentStep: WizardStepId }) {
   const currentIndex = WIZARD_STEPS.findIndex((s) => s.id === currentStep);
   const current = WIZARD_STEPS[currentIndex];
   const CurrentIcon = current ? STEP_ICONS[current.id] : STEP_ICONS.household;
+  const isResult = currentStep === "result";
 
   return (
     <div className="mb-8">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-foreground">
+          步骤 {currentIndex + 1} / {WIZARD_STEPS.length}
+          {!isResult ? (
+            <span className="font-normal text-muted-foreground"> · {current?.title}</span>
+          ) : null}
+        </p>
+        {!isResult ? (
+          <p className="hidden text-xs text-muted-foreground sm:block">
+            预计 {Math.max(1, WIZARD_STEPS.length - currentIndex - 1)} 步后生成报告
+          </p>
+        ) : null}
+      </div>
+
       {/* 窄屏：纵向步骤列表 */}
       <ol className="space-y-0 md:hidden" aria-label="评估步骤">
         {WIZARD_STEPS.map((step, index) => {
@@ -68,11 +84,11 @@ export function StepIndicator({ currentStep }: { currentStep: WizardStepId }) {
                   index={index}
                   title={step.title}
                 />
-                {!isLast && <div className="my-1 w-px flex-1 min-h-4 bg-border" aria-hidden />}
+                {!isLast && <div className="my-1 min-h-4 w-px flex-1 bg-border" aria-hidden />}
               </div>
               <p
                 className={cn(
-                  "pb-4 pt-1.5 text-sm",
+                  "pb-4 pt-1.5 text-sm leading-relaxed",
                   isActive ? "font-medium text-foreground" : "text-muted-foreground"
                 )}
               >
@@ -86,7 +102,7 @@ export function StepIndicator({ currentStep }: { currentStep: WizardStepId }) {
       {/* 宽屏：横向仅图标，Chevron 连接 */}
       <ol
         className="hidden md:flex md:flex-nowrap md:items-center md:gap-1 md:overflow-x-auto md:pb-2"
-        aria-label="评估步骤"
+        aria-hidden="true"
       >
         {WIZARD_STEPS.map((step, index) => {
           const isActive = step.id === currentStep;
@@ -94,8 +110,7 @@ export function StepIndicator({ currentStep }: { currentStep: WizardStepId }) {
 
           return (
             <li
-              key={step.id}
-              aria-current={isActive ? "step" : undefined}
+              key={`desktop-${step.id}`}
               className="flex shrink-0 items-center gap-1"
             >
               <StepBadge
@@ -121,7 +136,9 @@ export function StepIndicator({ currentStep }: { currentStep: WizardStepId }) {
 
       {current ? (
         <>
-          <p className="mt-4 text-sm text-muted-foreground md:hidden">{current.description}</p>
+          <p className="mt-4 text-sm leading-relaxed text-muted-foreground md:hidden">
+            {current.description}
+          </p>
           <div className="mt-6 hidden md:block">
             <IconHeading
               icon={CurrentIcon}
@@ -149,16 +166,21 @@ export function WizardNav({
   const isReport = nextLabel === "生成报告";
 
   return (
-    <div className="mt-8 flex items-center justify-between border-t pt-6">
+    <div className="mt-8 flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
       {onBack ? (
-        <Button type="button" variant="ghost" onClick={onBack}>
+        <Button type="button" variant="ghost" onClick={onBack} className="sm:w-auto">
           <ChevronLeft className="size-4" aria-hidden />
           上一步
         </Button>
       ) : (
-        <div />
+        <div className="hidden sm:block" />
       )}
-      <Button type="button" onClick={onNext} disabled={!canNext}>
+      <Button
+        type="button"
+        onClick={onNext}
+        disabled={!canNext}
+        className="w-full sm:ml-auto sm:w-auto"
+      >
         {isReport ? <FileText className="size-4" aria-hidden /> : null}
         {nextLabel}
         {!isReport ? <ChevronRight className="size-4" aria-hidden /> : null}

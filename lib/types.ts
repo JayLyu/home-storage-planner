@@ -85,6 +85,26 @@ export interface RoomDemand {
   modules: ModuleResult[];
 }
 
+/** 旧房分空间收纳估算（基于柜体长度与爆仓区域推断） */
+export interface OldRoomEstimate {
+  room: RoomZone;
+  /** 估算柜体容量 (m³) */
+  capacity: number;
+  /** 含爆仓压力的有效负载 (m³) */
+  effectiveLoad: number;
+  isOverflow: boolean;
+}
+
+export interface RoomDemandComparison {
+  totalOldCapacity: number;
+  totalOldEffectiveLoad: number;
+  totalNewVolume: number;
+  /** 新房净需求 − 旧房柜体容量 */
+  capacityDelta: number;
+  capacityDeltaPct: number;
+  oldRoomEstimates: OldRoomEstimate[];
+}
+
 export interface RiskFactor {
   riskType: string;
   level: RiskLevel;
@@ -107,6 +127,7 @@ export interface AssessmentResult {
   redundancyRate: number;
   modules: ModuleResult[];
   roomDemands: RoomDemand[];
+  roomComparison: RoomDemandComparison;
   risks: RiskFactor[];
   recommendations: Recommendation[];
   designerChecklist: string[];

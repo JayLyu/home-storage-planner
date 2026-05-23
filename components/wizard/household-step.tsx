@@ -5,6 +5,7 @@ import {
   Input,
   SelectField,
   SwitchField,
+  SwitchFieldGroup,
 } from "@/components/form-fields";
 import { WizardNav } from "@/components/wizard/step-indicator";
 import { useAssessment } from "@/lib/store";
@@ -15,10 +16,10 @@ export function HouseholdStep() {
   const { household, setHousehold, setStep } = useAssessment();
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField>
-          <Label>家庭人数</Label>
+        <FormField description="包含长期同住的家庭成员数量">
+          <Label className="text-sm font-medium">家庭人数</Label>
           <Input
             type="number"
             min={1}
@@ -39,26 +40,32 @@ export function HouseholdStep() {
         />
       </div>
 
-      <SwitchField
-        label="家中有孩子"
-        checked={household.hasChildren}
-        onChange={(hasChildren) => setHousehold({ hasChildren })}
-      />
-      <SwitchField
-        label="计划生育"
-        checked={household.plansForChildren}
-        onChange={(plansForChildren) => setHousehold({ plansForChildren })}
-      />
-      <SwitchField
-        label="有宠物"
-        checked={household.hasPets}
-        onChange={(hasPets) => setHousehold({ hasPets })}
-      />
-      <SwitchField
-        label="在家办公"
-        checked={household.worksFromHome}
-        onChange={(worksFromHome) => setHousehold({ worksFromHome })}
-      />
+      <SwitchFieldGroup
+        legend="家庭特征"
+        description="这些选项会影响物品基线与未来增长预估"
+      >
+        <SwitchField
+          label="家中有孩子"
+          checked={household.hasChildren}
+          onChange={(hasChildren) => setHousehold({ hasChildren })}
+        />
+        <SwitchField
+          label="计划生育"
+          checked={household.plansForChildren}
+          onChange={(plansForChildren) => setHousehold({ plansForChildren })}
+        />
+        <SwitchField
+          label="有宠物"
+          checked={household.hasPets}
+          onChange={(hasPets) => setHousehold({ hasPets })}
+        />
+        <SwitchField
+          label="在家办公"
+          checked={household.worksFromHome}
+          onChange={(worksFromHome) => setHousehold({ worksFromHome })}
+          description="需要额外文件、设备收纳空间"
+        />
+      </SwitchFieldGroup>
 
       <SelectField<HouseholdGrowth>
         label="未来 3 年人数变化"

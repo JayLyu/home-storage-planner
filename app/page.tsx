@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconLabel } from "@/components/ui/icon-text";
+import { cn } from "@/lib/utils";
 import { ArrowRight, ArrowRightLeft, Clock, Package, ShieldAlert } from "lucide-react";
 
 const FEATURES = [
@@ -30,16 +31,14 @@ export default function Home() {
           <IconLabel icon={Package} className="font-semibold text-foreground">
             Home Storage Planner
           </IconLabel>
-          <Link href="/assess">
-            <Button variant="ghost">
-              开始评估
-              <ArrowRight className="size-4" aria-hidden />
-            </Button>
+          <Link href="/assess" className={buttonVariants({ variant: "ghost" })}>
+            开始评估
+            <ArrowRight className="size-4" aria-hidden />
           </Link>
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-20">
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-16 sm:py-20">
         <div className="max-w-2xl text-center">
           <p className="mb-4 text-sm font-medium uppercase tracking-widest text-muted-foreground">
             装修前收纳评估
@@ -54,29 +53,31 @@ export default function Home() {
             输出新房所需的收纳容量、柜体建议与风险报告。
           </p>
 
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Link href="/assess">
-              <Button className="min-w-[160px]">
-                开始评估
-                <ArrowRight className="size-4" aria-hidden />
-              </Button>
+          <div className="mt-10 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
+            <Link href="/assess" className={cn(buttonVariants(), "min-w-[160px] justify-center")}>
+              开始评估
+              <ArrowRight className="size-4" aria-hidden />
             </Link>
-            <Link href="/assess">
-              <Button variant="secondary" className="min-w-[160px]">
-                <Clock className="size-4" aria-hidden />
-                快速估算
-              </Button>
+            <Link
+              href="/assess?mode=quick"
+              className={cn(buttonVariants({ variant: "secondary" }), "min-w-[160px] justify-center")}
+            >
+              <Clock className="size-4" aria-hidden />
+              快速估算
             </Link>
           </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            快速估算会默认使用「快速盘点」模式，约 15 分钟完成
+          </p>
 
-          <div className="mt-16 grid gap-4 text-left sm:grid-cols-3">
+          <div className="mt-14 grid gap-4 text-left sm:grid-cols-3">
             {FEATURES.map((item) => (
-              <Card key={item.title}>
+              <Card key={item.title} className="border-muted/80">
                 <CardHeader>
-                  <CardTitle>
+                  <CardTitle className="text-base">
                     <IconLabel icon={item.icon}>{item.title}</IconLabel>
                   </CardTitle>
-                  <CardDescription>{item.desc}</CardDescription>
+                  <CardDescription className="leading-relaxed">{item.desc}</CardDescription>
                 </CardHeader>
               </Card>
             ))}

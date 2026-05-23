@@ -8,7 +8,7 @@ export function LifestyleStep() {
   const { lifestyle, setLifestyle, setStep } = useAssessment();
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <p className="mb-6 text-sm text-muted-foreground">
         请根据你家的实际生活方式，为以下维度打分（1 = 低，5 = 高）。
       </p>

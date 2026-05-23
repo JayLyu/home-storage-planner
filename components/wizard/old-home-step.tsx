@@ -27,7 +27,7 @@ export function OldHomeStep() {
   const { oldHome, setOldHome, setStep } = useAssessment();
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
           <Label>旧房面积 (㎡)</Label>

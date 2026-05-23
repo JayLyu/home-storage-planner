@@ -26,7 +26,7 @@ export function InventoryStep() {
   const { inventoryMode, setInventoryMode, inventory, setInventoryItem, setStep } = useAssessment();
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <ToggleGroup
         variant="outline"
         spacing={2}
@@ -35,7 +35,7 @@ export function InventoryStep() {
           const value = values[0];
           if (value) setInventoryMode(value as InventoryMode);
         }}
-        className="mb-6 grid w-full gap-3 sm:grid-cols-3"
+        className="mb-6 grid w-full grid-cols-1 gap-3 sm:grid-cols-3"
       >
         {MODES.map((mode) => {
           const Icon = mode.icon;
@@ -43,12 +43,14 @@ export function InventoryStep() {
             <ToggleGroupItem
               key={mode.id}
               value={mode.id}
-              className="h-auto flex-col items-start rounded-xl p-4 text-left data-pressed:border-primary data-pressed:bg-accent"
+              className="h-auto w-full min-w-0 shrink whitespace-normal rounded-xl p-4 text-left data-pressed:border-primary data-pressed:bg-accent flex-col items-start"
             >
               <IconLabel icon={Icon} className="font-medium">
                 {mode.title}
               </IconLabel>
-              <span className="mt-1 text-xs font-normal text-muted-foreground">{mode.desc}</span>
+              <span className="mt-1 w-full text-left text-xs leading-relaxed font-normal whitespace-normal text-muted-foreground">
+                {mode.desc}
+              </span>
             </ToggleGroupItem>
           );
         })}

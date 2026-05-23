@@ -5,11 +5,39 @@ import type {
   AssessmentResult,
   InventoryItem,
   ModuleResult,
+  OldRoomEstimate,
   Recommendation,
   RiskFactor,
   RoomDemand,
+  RoomDemandComparison,
   RoomZone,
 } from "./types";
+import { formatNumber } from "./utils";
+
+const ALL_ROOMS: RoomZone[] = ["玄关", "客厅", "厨房", "卧室", "阳台", "储物间"];
+
+const CABINET_TYPE_ROOM: Record<string, RoomZone> = {
+  衣柜: "卧室",
+  鞋柜: "玄关",
+  餐边柜: "厨房",
+  厨房高柜: "厨房",
+  家政柜: "阳台",
+  阳台柜: "阳台",
+  书柜: "客厅",
+};
+
+const DEFAULT_ROOM_WEIGHTS: Record<RoomZone, number> = {
+  卧室: 0.35,
+  厨房: 0.22,
+  玄关: 0.12,
+  客厅: 0.15,
+  阳台: 0.11,
+  储物间: 0.05,
+};
+
+/** 80cm 宽标准高柜模块毛体积 (m³) */
+const CABINET_VOLUME_PER_MODULE = 1.15;
+const CABINET_WIDTH_M = 0.8;
 
 function modulesForInventory(inventory: InventoryItem[]): ModuleResult[] {
   const moduleCounts = new Map<string, { count: number; room: RoomZone }>();
@@ -55,8 +83,7 @@ function computeRedundancyRate(input: AssessmentInput): number {
 }
 
 function buildRoomDemands(modules: ModuleResult[]): RoomDemand[] {
-  const rooms: RoomZone[] = ["玄关", "客厅", "厨房", "卧室", "阳台", "储物间"];
-  return rooms.map((room) => {
+  return ALL_ROOMS.map((room) => {
     const roomModules = modules.filter((m) => m.room === room);
     return {
       room,
@@ -64,6 +91,87 @@ function buildRoomDemands(modules: ModuleResult[]): RoomDemand[] {
       modules: roomModules,
     };
   });
+}
+
+function estimateOldTotalCapacity(input: AssessmentInput): number {
+  const { currentCabinetLength, oldHomeArea } = input.oldHome;
+  if (currentCabinetLength > 0) {
+    return (currentCabinetLength / CABINET_WIDTH_M) * CABINET_VOLUME_PER_MODULE;
+  }
+  return Math.round(oldHomeArea * 0.018 * 100) / 100;
+}
+
+function distributeOldCapacity(input: AssessmentInput, totalCapacity: number): Record<RoomZone, number> {
+  const weights: Record<RoomZone, number> = { ...DEFAULT_ROOM_WEIGHTS };
+  const types = input.oldHome.currentCabinetTypes;
+
+  if (types.length > 0) {
+    for (const room of ALL_ROOMS) weights[room] = 0;
+    for (const type of types) {
+      const room = CABINET_TYPE_ROOM[type];
+      if (room) weights[room] += 1;
+    }
+    const weightSum = ALL_ROOMS.reduce((s, r) => s + weights[r], 0);
+    if (weightSum === 0) {
+      Object.assign(weights, DEFAULT_ROOM_WEIGHTS);
+    }
+  }
+
+  const weightSum = ALL_ROOMS.reduce((s, r) => s + weights[r], 0);
+  const distribution = {} as Record<RoomZone, number>;
+  for (const room of ALL_ROOMS) {
+    distribution[room] = Math.round((totalCapacity * (weights[room] / weightSum)) * 100) / 100;
+  }
+  return distribution;
+}
+
+function buildRoomComparison(
+  input: AssessmentInput,
+  roomDemands: RoomDemand[],
+  totalNewVolume: number
+): RoomDemandComparison {
+  const totalOldCapacity = estimateOldTotalCapacity(input);
+  const distribution = distributeOldCapacity(input, totalOldCapacity);
+  const overflowSet = new Set(input.oldHome.overflowZones);
+  const satisfactionFactor =
+    input.oldHome.oldStorageSatisfaction === "严重不足" ? 1.15 :
+    input.oldHome.oldStorageSatisfaction === "不足" ? 1.08 : 1;
+
+  const oldRoomEstimates: OldRoomEstimate[] = ALL_ROOMS.map((room) => {
+    const capacity = distribution[room];
+    const isOverflow = overflowSet.has(room);
+    const newVolume = roomDemands.find((d) => d.room === room)?.volume ?? 0;
+
+    let effectiveLoad = capacity * satisfactionFactor;
+    if (isOverflow) {
+      effectiveLoad = Math.max(effectiveLoad * 1.28, newVolume * 0.92, capacity * 1.15);
+    }
+
+    return {
+      room,
+      capacity,
+      effectiveLoad: Math.round(effectiveLoad * 100) / 100,
+      isOverflow,
+    };
+  });
+
+  const totalOldEffectiveLoad = Math.round(
+    oldRoomEstimates.reduce((s, r) => s + r.effectiveLoad, 0) * 100
+  ) / 100;
+  const capacityDelta = Math.round((totalNewVolume - totalOldCapacity) * 100) / 100;
+  const capacityDeltaPct =
+    totalOldCapacity > 0
+      ? Math.round((capacityDelta / totalOldCapacity) * 100)
+      : 0;
+
+  return {
+    totalOldCapacity: Math.round(totalOldCapacity * 100) / 100,
+    totalOldEffectiveLoad,
+    totalNewVolume: totalNewVolume,
+    capacityDelta,
+    capacityDeltaPct,
+    oldRoomEstimates,
+  };
 }
 
 function assessRisks(input: AssessmentInput, modules: ModuleResult[], grossVolume: number): RiskFactor[] {
@@ -79,7 +187,7 @@ function assessRisks(input: AssessmentInput, modules: ModuleResult[], grossVolum
     risks.push({
       riskType: "容量风险",
       level: estimatedLength > plannedLength + 3 ? "高" : "中",
-      evidence: `估算柜体总长度约 ${estimatedLength.toFixed(1)}m，超出当前规划区域容量`,
+      evidence: `估算柜体总长度约 ${formatNumber(estimatedLength)}m，超出当前规划区域容量`,
       suggestion: "建议增加高柜、储物间或餐边柜，或减少非必要开放空间",
     });
   }
@@ -151,7 +259,7 @@ function buildRecommendations(modules: ModuleResult[], input: AssessmentInput): 
     recs.push({
       targetZone: "卧室",
       cabinetType: "衣柜",
-      description: `建议衣柜总长度不少于 ${wardrobeLength.toFixed(1)}m，含短挂、长挂与抽屉区`,
+      description: `建议衣柜总长度不少于 ${formatNumber(wardrobeLength)}m，含短挂、长挂与抽屉区`,
       priority: wardrobeLength >= 4 ? "高" : "中",
     });
   }
@@ -161,7 +269,7 @@ function buildRecommendations(modules: ModuleResult[], input: AssessmentInput): 
     recs.push({
       targetZone: "玄关",
       cabinetType: "鞋柜",
-      description: `建议 ${shoeCount.count} 组鞋柜模块（约 ${shoeCount.count * 0.8}m）`,
+      description: `建议 ${shoeCount.count} 组鞋柜模块（约 ${formatNumber(shoeCount.count * 0.8)}m）`,
       priority: "高",
     });
   }
@@ -259,7 +367,7 @@ function buildDesignerChecklist(
 
   const longHang = modules.find((m) => m.moduleId === "longHangModule");
   if (longHang) {
-    checklist.push(`长挂区需连续高度 ≥ 150cm，长度 ≥ ${(longHang.count * 0.8).toFixed(1)}m`);
+    checklist.push(`长挂区需连续高度 ≥ 150cm，长度 ≥ ${formatNumber(longHang.count * 0.8)}m`);
   }
 
   if (input.lifestyle.digitalDeviceLevel >= 3) {
@@ -283,6 +391,7 @@ export function calculateAssessment(input: AssessmentInput): AssessmentResult {
   const baseGross = modules.reduce((sum, m) => sum + m.grossVolume, 0);
   const grossVolume = baseGross * (1 + redundancyRate);
   const roomDemands = buildRoomDemands(modules);
+  const roomComparison = buildRoomComparison(input, roomDemands, netVolume);
   const risks = assessRisks(input, modules, grossVolume);
   const recommendations = buildRecommendations(modules, input);
   const score = computeScore(risks, redundancyRate, input);
@@ -292,11 +401,12 @@ export function calculateAssessment(input: AssessmentInput): AssessmentResult {
   return {
     score,
     riskLevel,
-    netVolume: Math.round(netVolume * 10) / 10,
-    grossVolume: Math.round(grossVolume * 10) / 10,
+    netVolume: Math.round(netVolume * 100) / 100,
+    grossVolume: Math.round(grossVolume * 100) / 100,
     redundancyRate: Math.round(redundancyRate * 100),
     modules,
     roomDemands,
+    roomComparison,
     risks,
     recommendations,
     designerChecklist: buildDesignerChecklist(modules, input, recommendations),

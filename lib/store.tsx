@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -87,7 +88,17 @@ interface AssessmentContextValue {
 
 const AssessmentContext = createContext<AssessmentContextValue | null>(null);
 
-function loadState() {
+type SavedState = {
+  step?: WizardStepId;
+  household?: HouseholdInfo;
+  oldHome?: OldHomeInfo;
+  newHome?: NewHomeInfo;
+  lifestyle?: LifestyleProfile;
+  inventoryMode?: InventoryMode;
+  inventory?: { categoryId: string; quantity: number; unit: string }[];
+};
+
+function loadState(): SavedState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -105,7 +116,8 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
   const [lifestyle, setLifestyleState] = useState<LifestyleProfile>(defaultLifestyle);
   const [inventoryMode, setInventoryMode] = useState<InventoryMode>("quick");
   const [inventory, setInventory] = useState<{ categoryId: string; quantity: number; unit: string }[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const [ready, setReady] = useState(false);
+  const skipSaveRef = useRef(true);
 
   useEffect(() => {
     const saved = loadState();
@@ -118,16 +130,17 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
       setInventoryMode(saved.inventoryMode ?? "quick");
       setInventory(saved.inventory ?? []);
     }
-    setHydrated(true);
+    skipSaveRef.current = false;
+    setReady(true);
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!ready || skipSaveRef.current) return;
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ step, household, oldHome, newHome, lifestyle, inventoryMode, inventory })
     );
-  }, [step, household, oldHome, newHome, lifestyle, inventoryMode, inventory, hydrated]);
+  }, [step, household, oldHome, newHome, lifestyle, inventoryMode, inventory, ready]);
 
   const setHousehold = useCallback((data: Partial<HouseholdInfo>) => {
     setHouseholdState((prev) => ({ ...prev, ...data }));
